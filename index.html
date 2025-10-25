@@ -3,87 +3,202 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mani's Resume</title>
+  <title>Admin - Planning Poker</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
     body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f4f4f4;
       margin: 0;
-      padding: 20px;
-      color: #333;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
     }
 
     .container {
-      max-width: 800px;
-      margin: auto;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.1);
       padding: 30px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 15px;
+      text-align: center;
+      width: 90%;
+      max-width: 700px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
 
-    h1, h2 {
-      color: #007acc;
+    h1 {
+      color: #00e0ff;
     }
 
-    .section {
-      margin-bottom: 30px;
+    button {
+      padding: 10px 25px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #00e0ff;
+      color: #003c58;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: background 0.3s;
     }
 
-    .section-title {
-      border-bottom: 2px solid #007acc;
-      padding-bottom: 5px;
-      margin-bottom: 15px;
+    button:hover {
+      background-color: #00b8d4;
+    }
+
+    #chart {
+      width: 100%;
+      height: 400px;
+    }
+
+    .avg {
+      margin-top: 15px;
       font-size: 1.2em;
+      color: #a3ffce;
     }
 
-    ul {
-      padding-left: 20px;
+    .note {
+      font-size: 0.8em;
+      color: #ccc;
+      margin-bottom: 10px;
+    }
+
+    a {
+      color: #00e0ff;
+      text-decoration: none;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Mani</h1>
-    <p><strong>Email:</strong> mani@example.com | <strong>Location:</strong> Norway</p>
 
-    <div class="section">
-      <div class="section-title">Summary</div>
-      <p>Thoughtful, practical, and emotionally intelligent professional with a passion for creative expression, technical problem-solving, and nurturing social connections.</p>
-    </div>
+<div class="container">
+    <h1>Integration Planning Poker</h1>
+	<h2>Admin Dashboard</h2>
+   <h3> <p class="note">Every card counts. Every voice matters.</p> </h3>
 
-    <div class="section">
-      <div class="section-title">Skills</div>
-      <ul>
-        <li>Methodical problem-solving and decision-making</li>
-        <li>Creative writing and poetic phrasing</li>
-        <li>UI/UX design for dashboards</li>
-        <li>API integrations and troubleshooting</li>
-      </ul>
-    </div>
+    <button onclick="revealEstimates()">Reveal Estimates</button>
+	<button onclick="callApiAndRefresh()">Clear Estimates</button>
+	
+    <div id="chart"></div>
+    <div class="avg" id="averageDisplay"></div>
 
-    <div class="section">
-      <div class="section-title">Experience</div>
-      <p><strong>Senior Developer</strong> – TechCorp (2020–Present)</p>
-      <ul>
-        <li>Designed Planning Poker dashboards with login flows</li>
-        <li>Led API integration for Datadog and MuleSoft</li>
-        <li>Refined communication strategies for empathetic code reviews</li>
-      </ul>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Education</div>
-      <p><strong>B.Sc. in Computer Science</strong> – University of Oslo</p>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Projects</div>
-      <ul>
-        <li>API Health Dashboard with ECharts</li>
-        <li>Creative breakfast ritual blog for parenting</li>
-        <li>Maternity photo shoot planner with poetic captions</li>
-      </ul>
-    </div>
+    <a href="index.html">← Back to Player Page</a>
   </div>
+
+  <script>
+    // --- Demo data ---
+    const sampleData = [
+      { username: "Alice", estimate: 3 },
+      { username: "Bob", estimate: 5 },
+      { username: "Charlie", estimate: 5 },
+      { username: "Diana", estimate: 8 },
+      { username: "Ethan", estimate: 3 },
+      { username: "Fiona", estimate: 5 },
+      { username: "George", estimate: 8 }
+    ];
+    localStorage.setItem("estimates", JSON.stringify(sampleData));
+
+    // Standard Fibonacci scale used in Planning Poker
+    const fibonacciScale = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+
+    // Function to round up to the next Fibonacci number
+    function roundUpToFibonacci(value) {
+      for (let i = 0; i < fibonacciScale.length; i++) {
+        if (value <= fibonacciScale[i]) return fibonacciScale[i];
+      }
+      return fibonacciScale[fibonacciScale.length - 1];
+    }
+	
+ function callApiAndRefresh() {
+    fetch("https://your-api-endpoint.com/data", {
+      method: "POST", // or "GET", depending on your API
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ key: "value" }) // remove if using GET
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json(); // optional, depending on your needs
+    })
+    .then(data => {
+      console.log("API call successful:", data);
+      location.reload(); // refresh the page
+    })
+    .catch(error => {
+      console.error("API call failed:", error);
+      alert("Something went wrong. Please try again.");
+    });
+  }
+
+
+    function revealEstimates() {
+      const estimates = JSON.parse(localStorage.getItem("estimates") || "[]");
+      if (!estimates.length) {
+        alert("No estimates found!");
+        return;
+      }
+
+      const numericValues = estimates.map(e => parseFloat(e.estimate)).filter(v => !isNaN(v));
+      const rawAvg = numericValues.length
+        ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length
+        : 0;
+
+      const roundedAvg = roundUpToFibonacci(rawAvg);
+      document.getElementById("averageDisplay").textContent = `Average estimate (Fibonacci): ${roundedAvg}`;
+
+      const chartDom = document.getElementById("chart");
+      const chart = echarts.init(chartDom);
+
+      const option = {
+        backgroundColor: "transparent",
+        tooltip: {
+          trigger: "item",
+          formatter: "{b}: {c} ({d}%)"
+        },
+        legend: {
+          bottom: "0%",
+          textStyle: { color: "#fff" }
+        },
+        series: [
+          {
+            name: "Estimates",
+            type: "pie",
+            radius: ["40%", "70%"],
+            avoidLabelOverlap: false,
+            label: {
+              show: true,
+              color: "#fff",
+              fontSize: 14,
+              formatter: "{b}: {c}"
+            },
+            labelLine: { show: true },
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: "#141e30",
+              borderWidth: 2
+            },
+            data: estimates.map(e => ({
+              value: parseFloat(e.estimate) || 0,
+              name: e.username
+            })),
+            color: [
+              "#00e0ff", "#ff6b6b", "#ffc107", "#4caf50",
+              "#9c27b0", "#03a9f4", "#ff9800", "#f06292"
+            ]
+          }
+        ]
+      };
+
+      chart.setOption(option);
+      window.onresize = chart.resize;
+    }
+	
+  </script>
 </body>
 </html>
